@@ -1,6 +1,7 @@
 from pathlib import Path
 from tokens import NoteEvent, NoteType, TimedNoteGroup
 import re
+from math import pi, sin, cos
 
 
 def parse_maidata_file(file_path: str | Path) -> dict:
@@ -33,21 +34,7 @@ def parse_maidata_file(file_path: str | Path) -> dict:
     return chart_data
 
 
-# ---------------------------------------------------------------------------
-# Tokenizer: chart string → list[TimedNoteGroup]
-# Only emits TAP and HOLD notes; slides/touches/fireworks are skipped.
-# ---------------------------------------------------------------------------
-
-# Regex that matches one "note expression" inside a beat slot.
-# We parse each comma-separated slot, then split on "/" for simultaneous notes,
-# then try to interpret each fragment as a tap or hold on buttons 1-8.
-
-# A single note fragment looks like:
-#   [button][modifiers][hold_params]?
-# where button = 1-8, modifiers = any combo of b/x, hold = h[wait:dur] or h[dur]
-#
-# Anything that doesn't match (slides, touch sensors, etc.) is silently skipped.
-
+# note expression regex
 _NOTE_RE = re.compile(
     r"""
     ^
@@ -207,9 +194,7 @@ def parse_chart(chart_str: str) -> list[TimedNoteGroup]:
     return result
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
+# main 
 if __name__ == "__main__":
     data = parse_maidata_file("data/raw/icecream.txt")
     print("Title:", data["metadata"].get("title"))

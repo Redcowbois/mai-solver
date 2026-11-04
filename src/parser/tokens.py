@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum, auto
 
-
 class NoteType(Enum):
     TAP = auto()
     HOLD = auto()
@@ -12,12 +11,10 @@ class NoteEvent:
     """A single note (tap or hold) at a specific time."""
     time_ms: float
     note_type: NoteType
-    button: int              # 1-8
+    button: int             # 1-8
     is_break: bool = False
     is_ex: bool = False
-    # Hold-specific: duration in milliseconds
-    hold_duration_ms: float = 0.0
-
+    hold_duration_ms: float = 0.0 #hold duration in ms
 
 @dataclass
 class TimedNoteGroup:
