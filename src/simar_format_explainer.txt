@@ -70,8 +70,8 @@ A. TAP NOTES
    Syntax: `[1-8]`
    Example: `1,2,3,4,` -> Taps around buttons 1, 2, 3, and 4.
    Special:
-   - `b` suffix = BREAK note (e.g., `1b`)
-   - `x` suffix = EX note (cannot produce Good/Great, only Perfect or Miss)
+   - `b` suffix = BREAK note (e.g., `1b`) -> ignore for now
+   - `x` suffix = EX note (cannot produce Good/Great, only Perfect or Miss) -> ignore for now
 
 B. HOLD NOTES
    Syntax: `[button]h[[wait:]duration]`
