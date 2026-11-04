@@ -197,6 +197,16 @@ def parse_chart(chart_str: str) -> list[TimedNoteGroup]:
     return result
 
 
+def write_processed_chart(chart: list[TimedNoteGroup], file_name: str) -> None:
+    """Write a parsed chart to a TXT file."""
+    output_path = Path("data/processed") / file_name
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        for group in chart:
+            f.write(str(group) + "\n")
+    
+
+
 # main 
 if __name__ == "__main__":
     data = parse_maidata_file("data/raw/icecream.txt")
@@ -217,3 +227,5 @@ if __name__ == "__main__":
         print(f"  First 10 groups:")
         for g in groups[:10]:
             print(f"    {g}")
+    
+        write_processed_chart(groups, "icecream" + str(diff_idx) + "-" + data['levels'][diff_idx] + ".txt")
