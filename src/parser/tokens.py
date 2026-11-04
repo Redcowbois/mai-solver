@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum, auto
+from typing import List, Tuple
 
 class NoteType(Enum):
     TAP = auto()
@@ -12,6 +13,7 @@ class NoteEvent:
     time_ms: float
     note_type: NoteType
     button: int             # 1-8
+    circle_coord: List[Tuple[float, float]]
     is_break: bool = False
     is_ex: bool = False
     hold_duration_ms: float = 0.0 #hold duration in ms

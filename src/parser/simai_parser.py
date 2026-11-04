@@ -1,5 +1,6 @@
 from pathlib import Path
 from tokens import NoteEvent, NoteType, TimedNoteGroup
+from geometry_transformation import PRECOMPUTED_PERIMETER_CANDIDATES
 import re
 from math import pi, sin, cos
 
@@ -117,7 +118,7 @@ def parse_chart(chart_str: str) -> list[TimedNoteGroup]:
                 # Not a simple tap/hold on 1-8 → skip (slide, touch, etc.)
                 continue
 
-            button = int(m.group("button"))
+            button = int(m.group("button")) #1 to 8
             mods = m.group("mods") or ""
             is_break = "b" in mods
             is_ex = "x" in mods
@@ -131,6 +132,7 @@ def parse_chart(chart_str: str) -> list[TimedNoteGroup]:
                     time_ms=t,
                     note_type=NoteType.HOLD,
                     button=button,
+                    circle_coord=PRECOMPUTED_PERIMETER_CANDIDATES[button],
                     is_break=is_break,
                     is_ex=is_ex,
                     hold_duration_ms=hold_ms,
@@ -141,6 +143,7 @@ def parse_chart(chart_str: str) -> list[TimedNoteGroup]:
                     time_ms=t,
                     note_type=NoteType.TAP,
                     button=button,
+                    circle_coord=PRECOMPUTED_PERIMETER_CANDIDATES[button],
                     is_break=is_break,
                     is_ex=is_ex,
                 ))
