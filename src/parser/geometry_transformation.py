@@ -48,7 +48,7 @@ BUTTON_ANGLES: Dict[int, float] = {
 }
 
 # valid touch points for tap and hold
-PRECOMPUTED_PERIMETER_CANDIDATES: Dict[int, List[Tuple[float, float]]] = {
+PRECOMPUTED_PERIMETER_CANDIDATES: Dict[int, List[Tuples[float, float]]] = {
     k: [
         _calculate_theta_pos(RADII["BUTTON"], BUTTON_ANGLES[k]),  # Switch c_contact
         _calculate_theta_pos(RADII["A"], BUTTON_ANGLES[k]),       # Glass touch contact

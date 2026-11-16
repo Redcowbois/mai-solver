@@ -27,12 +27,15 @@ class TimedNoteGroup:
     def __repr__(self) -> str:
         labels = []
         for n in self.notes:
-            s = str(n.button)
+            s = f"{n.button}"
             if n.is_break:
                 s += "b"
             if n.is_ex:
                 s += "x"
             if n.note_type == NoteType.HOLD:
                 s += f"h({n.hold_duration_ms:.0f}ms)"
+            if n.circle_coord:
+                x, y = n.circle_coord[0]
+                s += f"({x:.2f}, {y:.2f})"
             labels.append(s)
         return f"@{self.time_ms:.1f}ms [{'/'.join(labels)}]"
