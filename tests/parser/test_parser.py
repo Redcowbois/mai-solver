@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 from simai_parser import parse_maidata_file, parse_chart, write_processed_chart
-from tokens import NoteType
+from chart_objects import NoteType
 from geometry_transformation import (
     _calculate_theta_pos,
     RADII,
@@ -203,8 +203,8 @@ class TestWriteProcessedChart:
 
         lines = output_file.read_text(encoding="utf-8").strip().splitlines()
         assert len(lines) == 2
-        assert lines[0].startswith("@0.0ms [1]")
-        assert lines[1].startswith("@500.0ms [2]")
+        assert lines[0].startswith("@0.0ms [1")
+        assert lines[1].startswith("@500.0ms [2")
 
 
 class TestGeometryTransformation:

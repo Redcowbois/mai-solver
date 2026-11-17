@@ -11,32 +11,32 @@ namespace py = pybind11;
 
 //type of note
 enum class NoteType {
-    TAP,
-    HOLD
+    TAP = 1,
+    HOLD = 2
 };
 
 // specific note on the chart
 class NoteEvent {
 public:
-    float time_ms;
+    double time_ms;
     NoteType note_type;
     int button;
-    std::vector<std::pair<float, float>> circle_coord;
+    std::vector<std::pair<double, double>> circle_coord;
     bool is_break;
     bool is_ex;
-    float hold_duration_ms;
+    double hold_duration_ms;
 
-    NoteEvent(float time, NoteType type, int button, const std::vector<std::pair<float, float>> &circle_coord, bool is_break = false, bool is_ex = false, float hold_duration_ms = 0.0f): 
+    NoteEvent(double time, NoteType type, int button, const std::vector<std::pair<double, double>> &circle_coord, bool is_break = false, bool is_ex = false, double hold_duration_ms = 0.0): 
         time_ms(time), note_type(type), button(button), circle_coord(circle_coord), is_break(is_break), is_ex(is_ex), hold_duration_ms(hold_duration_ms) {}
 };
 
 // all notes at a specific time stamp
 class TimedNoteGroup {
 public:
-    float time_ms;
+    double time_ms;
     std::vector<NoteEvent> notes;
 
-    TimedNoteGroup(float time_ms, const std::vector<NoteEvent> &notes = {}): 
+    TimedNoteGroup(double time_ms, const std::vector<NoteEvent> &notes = {}): 
         time_ms(time_ms), notes(notes) {}
     
     void add_note(const NoteEvent &note) {
@@ -95,7 +95,7 @@ PYBIND11_MODULE(chart_objects, m) {
         .export_values();
 
     py::class_<NoteEvent>(m, "NoteEvent")
-        .def(py::init<float, NoteType, int, const std::vector<std::pair<float, float>> &, bool, bool, float>(),
+        .def(py::init<double, NoteType, int, const std::vector<std::pair<double, double>> &, bool, bool, double>(),
             "Constructor for NoteEvent", 
             py::arg("time_ms"), 
             py::arg("note_type"), 
@@ -103,7 +103,7 @@ PYBIND11_MODULE(chart_objects, m) {
             py::arg("circle_coord"), 
             py::arg("is_break") = false, 
             py::arg("is_ex") = false, 
-            py::arg("hold_duration_ms") = 0.0f)
+            py::arg("hold_duration_ms") = 0.0)
         .def_readwrite("time_ms", &NoteEvent::time_ms)
         .def_readwrite("note_type", &NoteEvent::note_type)
         .def_readwrite("button", &NoteEvent::button)
@@ -113,7 +113,7 @@ PYBIND11_MODULE(chart_objects, m) {
         .def_readwrite("hold_duration_ms", &NoteEvent::hold_duration_ms);
 
     py::class_<TimedNoteGroup>(m, "TimedNoteGroup")
-        .def(py::init<float, const std::vector<NoteEvent> &>(),
+        .def(py::init<double, const std::vector<NoteEvent> &>(),
             "Constructor for TimedNoteGroup", 
             py::arg("time_ms"), 
             py::arg("notes") = std::vector<NoteEvent>())
