@@ -55,3 +55,6 @@ PRECOMPUTED_PERIMETER_CANDIDATES: Dict[int, List[Tuples[float, float]]] = {
     ]
     for k in range(1, 9)
 }
+
+if __name__ == "__main__":
+    print(PRECOMPUTED_PERIMETER_CANDIDATES)
