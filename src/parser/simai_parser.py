@@ -1,11 +1,8 @@
 from pathlib import Path
-from tokens import NoteEvent, NoteType, TimedNoteGroup
 from geometry_transformation import PRECOMPUTED_PERIMETER_CANDIDATES
+from chart_objects import NoteEvent, NoteType, TimedNoteGroup
 import re
 from math import pi, sin, cos
-
-def test_answer():
-    assert func(3) == 5
 
 def parse_maidata_file(file_path: str | Path) -> dict:
     """Parse a maidata.txt file into metadata, levels, and raw chart strings."""

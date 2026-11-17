@@ -1,3 +1,5 @@
+# DEPRECIATED CODE
+
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import List, Tuple
