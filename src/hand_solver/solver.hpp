@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <limits>
 #include "chart_objects.hpp"
 
 // class for solver settings
@@ -90,4 +91,16 @@ class SolverOutput {
         SolverOutput(const std::vector<HandPlacement> &hand_p, 
                      const KinematicData &kinematic_d)
             : hand_placements(hand_p), kinematic_data(kinematic_d) {}
+};
+
+
+struct TrellisNode {
+    std::pair<float, float> lh_pos {0.0, 0.0};
+    std::pair<float, float> rh_pos {0.0, 0.0};
+    float total_score {std::numeric_limits<float>::infinity()};
+    float lock_until_left {0.0};
+    float lock_until_right {0.0};
+    int16_t prev_node {-1};
+    bool was_left_used {false};
+    bool was_right_used {false};
 };
