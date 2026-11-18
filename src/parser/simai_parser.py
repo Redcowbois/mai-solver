@@ -1,6 +1,6 @@
 from pathlib import Path
 from geometry_transformation import PRECOMPUTED_PERIMETER_CANDIDATES
-from chart_objects import NoteEvent, NoteType, TimedNoteGroup
+from mai_solver.chart_objects import NoteEvent, NoteType, TimedNoteGroup
 import re
 from math import pi, sin, cos
 

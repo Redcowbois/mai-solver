@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(pybind11 CONFIG REQUIRED)
 
-pybind11_add_module(chart_objects src/hand_solver/chart_objects.cpp)
+pybind11_add_module(mai_solver src/hand_solver/bindings.cpp)
 
-install (TARGETS chart_objects DESTINATION .)
+install (TARGETS mai_solver DESTINATION .)
+

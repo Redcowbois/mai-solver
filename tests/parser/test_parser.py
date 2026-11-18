@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 from simai_parser import parse_maidata_file, parse_chart, write_processed_chart
-from chart_objects import NoteType
+from mai_solver.chart_objects import NoteType
 from geometry_transformation import (
     _calculate_theta_pos,
     RADII,

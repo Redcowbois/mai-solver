@@ -23,12 +23,9 @@ class SolverConfig {
 
 //enum for hand actions
 enum class HandAction {
-    RIGHT_IDLE,
-    LEFT_IDLE,
-    RIGHT_HOLD,
-    LEFT_HOLD,
-    RIGHT_JACK,
-    LEFT_JACK,
+    IDLE,
+    TAP,
+    HOLD
 };
 
 // class for the optimal hand placements
@@ -37,15 +34,17 @@ class HandPlacement {
         double time {0.0};
         std::pair<double, double> right_hand_pos {0.0, 0.0};
         std::pair<double, double> left_hand_pos {0.0, 0.0};
-        HandAction right_action {HandAction::RIGHT_IDLE};
-        HandAction left_action {HandAction::LEFT_IDLE};
+        HandAction right_action {HandAction::IDLE};
+        HandAction left_action {HandAction::IDLE};
 
         HandPlacement() = default;
 
         HandPlacement(double time_ms, 
                       const std::pair<double, double> &rh_pos, 
-                      const std::pair<double, double> &lh_pos)
-            : time(time_ms), right_hand_pos(rh_pos), left_hand_pos(lh_pos) {}
+                      const std::pair<double, double> &lh_pos,
+                      HandAction right_a,
+                      HandAction left_a)
+            : time(time_ms), right_hand_pos(rh_pos), left_hand_pos(lh_pos), right_action(right_a), left_action(left_a) {}
 };
 
 // class for solved kinematic data

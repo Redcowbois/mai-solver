@@ -6,8 +6,6 @@
 #include <sstream>
 #include <iomanip>
 
-int test(int a);
-
 // Type of note
 enum class NoteType {
     TAP = 1,
