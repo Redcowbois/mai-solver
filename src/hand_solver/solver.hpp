@@ -97,8 +97,8 @@ struct TrellisNode {
   float lock_until_left{0.0f};
   float lock_until_right{0.0f};
   int16_t prev_node{-1};
-  bool was_left_used{false};
-  bool was_right_used{false};
+  bool left_used{false};
+  bool right_used{false};
 
   TrellisNode() = default;
 
@@ -116,8 +116,8 @@ struct TrellisNode {
         lock_until_left(lock_l),
         lock_until_right(lock_r),
         prev_node(prev),
-        was_left_used(left_used),
-        was_right_used(right_used) {}
+        left_used(left_used),
+        right_used(right_used) {}
 };
 
 float transition_cost(const TrellisNode& prev,
@@ -134,17 +134,19 @@ float jack_penalty(const TrellisNode& prev,
                    float curr_t,
                    const SolverConfig& config) noexcept;
 
+void expand_trellis(const SolverConfig& config,
+                    const TrellisNode& prev,
+                    float prev_t,
+                    int16_t prev_idx,
+                    const TimedNoteGroup& notes,
+                    std::vector<TrellisNode>& nodes_next);
 
-float transition_cost(const TrellisNode& prev,
-                      const TrellisNode& curr,
-                      float prev_t,
-                      float curr_t,
-                      const SolverConfig& config) noexcept;
-
-float crossover_penalty(const TrellisNode& curr, const SolverConfig& config) noexcept;
-
-float jack_penalty(const TrellisNode& prev,
-                   const TrellisNode& curr,
-                   float prev_t,
-                   float curr_t,
-                   const SolverConfig& config) noexcept;
+inline std::vector<TrellisNode> expand_trellis(const SolverConfig& config,
+                                               const TrellisNode& prev,
+                                               float prev_t,
+                                               int16_t prev_idx,
+                                               const TimedNoteGroup& notes) {
+  std::vector<TrellisNode> nodes_next;
+  expand_trellis(config, prev, prev_t, prev_idx, notes, nodes_next);
+  return nodes_next;
+}

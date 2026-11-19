@@ -1,6 +1,7 @@
 BasedOnStyle: Google
 ColumnLimit: 120
-AllowAllParametersOfDeclarationOnNextLine: false
-BinPackParameters: false
+IndentWidth: 2
+BinPackParameters: true
+BinPackArguments: true
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 BreakConstructorInitializers: BeforeColon
