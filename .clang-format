@@ -1,0 +1,6 @@
+BasedOnStyle: Google
+ColumnLimit: 120
+AllowAllParametersOfDeclarationOnNextLine: false
+BinPackParameters: false
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+BreakConstructorInitializers: BeforeColon

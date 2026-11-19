@@ -114,4 +114,39 @@ PYBIND11_MODULE(mai_solver, m) {
             py::arg("kinematic_d"))
         .def_readwrite("hand_placements", &SolverOutput::hand_placements)
         .def_readwrite("kinematic_data", &SolverOutput::kinematic_data);
+
+    py::class_<TrellisNode>(m2, "TrellisNode")
+        .def(py::init<>(), "Default constructor for TrellisNode")
+        .def(py::init<const std::pair<float, float> &,
+                      const std::pair<float, float> &,
+                      float, float, float, int16_t, bool, bool>(),
+             "Parameterized constructor for TrellisNode",
+             py::arg("left_hand_pos"),
+             py::arg("right_hand_pos"),
+             py::arg("total_score") = std::numeric_limits<float>::infinity(),
+             py::arg("lock_until_left") = 0.0f,
+             py::arg("lock_until_right") = 0.0f,
+             py::arg("prev_node") = -1,
+             py::arg("was_left_used") = false,
+             py::arg("was_right_used") = false)
+        .def_readwrite("left_hand_pos", &TrellisNode::left_hand_pos)
+        .def_readwrite("right_hand_pos", &TrellisNode::right_hand_pos)
+        .def_readwrite("total_score", &TrellisNode::total_score)
+        .def_readwrite("lock_until_left", &TrellisNode::lock_until_left)
+        .def_readwrite("lock_until_right", &TrellisNode::lock_until_right)
+        .def_readwrite("prev_node", &TrellisNode::prev_node)
+        .def_readwrite("was_left_used", &TrellisNode::was_left_used)
+        .def_readwrite("was_right_used", &TrellisNode::was_right_used);
+
+    m2.def("transition_cost", &transition_cost,
+           "Calculate transition movement cost between trellis nodes",
+           py::arg("prev"), py::arg("curr"), py::arg("prev_t"), py::arg("curr_t"), py::arg("config"));
+
+    m2.def("crossover_penalty", &crossover_penalty,
+           "Calculate crossover penalty for a trellis node",
+           py::arg("curr"), py::arg("config"));
+
+    m2.def("jack_penalty", &jack_penalty,
+           "Calculate jack penalty between consecutive trellis nodes",
+           py::arg("prev"), py::arg("curr"), py::arg("prev_t"), py::arg("curr_t"), py::arg("config"));
 }
