@@ -127,4 +127,6 @@ inline std::vector<TrellisNode> expand_trellis(const SolverConfig& config, const
   return nodes_next;
 }
 
+KinematicData compute_kinematics(const std::deque<HandPlacement>& solution, const SolverConfig& config);
+
 SolverOutput solver(const SolverConfig& config, const std::vector<TimedNoteGroup>& chart);
