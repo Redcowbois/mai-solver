@@ -3,8 +3,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <algorithm>
+#include <deque>
 #include <iostream>
 #include <limits>
+#include <vector>
 
 #include "chart_objects.hpp"
 
@@ -98,6 +101,14 @@ float compute_total_cost(const TrellisNode& prev, const TrellisNode& curr, float
 void expand_trellis(const SolverConfig& config, const TrellisNode& prev, float prev_t, int16_t prev_idx,
                     const TimedNoteGroup& note_group, std::vector<TrellisNode>& nodes_next) {
   // assume that there are at most 2 objects in TimeNoteGroup
+  // lambda to remove redundant code
+  auto add_if_valid = [&nodes_next](float cost, TrellisNode& new_node) {
+    if (cost < std::numeric_limits<float>::infinity()) {
+      new_node.total_score += cost;
+      nodes_next.push_back(new_node);
+    }
+  };
+
   if (note_group.notes.size() == 0) {
     return;
   } else if (note_group.notes.size() == 1) {
@@ -111,10 +122,7 @@ void expand_trellis(const SolverConfig& config, const TrellisNode& prev, float p
                       prev.total_score, lock, prev.lock_until_right, prev_idx, true, false);
 
       float cost = compute_total_cost(prev, left_node, prev_t, note.time_ms, config);
-      if (cost < std::numeric_limits<float>::infinity()) {
-        left_node.total_score += cost;
-        nodes_next.push_back(left_node);
-      }
+      add_if_valid(cost, left_node);
     }
 
     // right hand node
@@ -124,23 +132,13 @@ void expand_trellis(const SolverConfig& config, const TrellisNode& prev, float p
                       prev.total_score, prev.lock_until_left, lock, prev_idx, false, true);
 
       float cost = compute_total_cost(prev, right_node, prev_t, note.time_ms, config);
-      if (cost < std::numeric_limits<float>::infinity()) {
-        right_node.total_score += cost;
-        nodes_next.push_back(right_node);
-      }
+      add_if_valid(cost, right_node);
     }
   } else if (note_group.notes.size() == 2) {
     const NoteEvent& note1 = note_group.notes[0];
     float lock1 = note1.note_type == NoteType::HOLD ? note1.time_ms + note1.hold_duration_ms : 0.0f;
     const NoteEvent& note2 = note_group.notes[1];
     float lock2 = note2.note_type == NoteType::HOLD ? note2.time_ms + note2.hold_duration_ms : 0.0f;
-
-    auto add_if_valid = [&nodes_next](float cost, TrellisNode& new_node) {
-      if (cost < std::numeric_limits<float>::infinity()) {
-        new_node.total_score += cost;
-        nodes_next.push_back(new_node);
-      }
-    };
 
     // if left and right aren't locked
     if (prev.lock_until_right - EPSILON <= note1.time_ms && prev.lock_until_left - EPSILON <= note1.time_ms) {
@@ -161,4 +159,71 @@ void expand_trellis(const SolverConfig& config, const TrellisNode& prev, float p
   } else {
     std::cout << "WARNING: More than 2 notes at " << note_group.time_ms << "ms.\n";
   }
+}
+
+SolverOutput solver(const SolverConfig& config, const std::vector<TimedNoteGroup>& chart) {
+  if (chart.empty()) {
+    return SolverOutput{};  // return empty output
+  }
+
+  std::vector<std::pair<float, std::vector<TrellisNode>>> history = {};
+  TrellisNode root = TrellisNode(config.left_hand_pos, config.right_hand_pos);
+  float prev_t = chart[0].time_ms <= 0.0f ? chart[0].time_ms - 1000.0f : 0.0f;
+  history.push_back({prev_t, {root}});
+
+  // forward pass
+  for (int i = 0; i < chart.size(); i++) {
+    std::vector<TrellisNode> beam = {};
+
+    // expand step
+    for (int j = 0; j < history[i].second.size(); j++) {
+      expand_trellis(config, history[i].second[j], prev_t, j, chart[i], beam);
+    }
+
+    // exit if invalid
+    if (beam.empty()) {
+      return SolverOutput{false, {}, {}};
+    }
+
+    // prune step
+    if (beam.size() > config.beam_width) {
+      std::partial_sort(beam.begin(), beam.begin() + config.beam_width, beam.end());
+      beam.resize(config.beam_width);
+    }
+
+    prev_t = chart[i].time_ms;
+    history.push_back({chart[i].time_ms, std::move(beam)});
+  }
+
+  // backwards pass
+  std::deque<HandPlacement> solution = {};
+  const auto& last_beam = history.back().second;
+  int prev_idx = std::distance(last_beam.begin(), std::min_element(last_beam.begin(), last_beam.end()));
+
+  for (int i = history.size() - 1; i > 0; i--) {
+    float time = history[i].first;
+    const auto& beam = history[i].second;
+    const TrellisNode& optimal_path = beam[prev_idx];
+    prev_idx = optimal_path.prev_node;
+
+    auto assign_action = [time](float lock_until, bool used) {
+      if (lock_until > time) {
+        return HandAction::HOLD;
+      } else if (used) {
+        return HandAction::TAP;
+      } else {
+        return HandAction::IDLE;
+      }
+    };
+
+    HandAction left_action = assign_action(optimal_path.lock_until_left, optimal_path.left_used);
+    HandAction right_action = assign_action(optimal_path.lock_until_right, optimal_path.right_used);
+    HandPlacement cur_pos =
+        HandPlacement(time, optimal_path.right_hand_pos, optimal_path.left_hand_pos, right_action, left_action);
+    solution.push_front(cur_pos);
+  }
+
+  KinematicData data = KinematicData();
+
+  return SolverOutput{true, solution, data};
 }
