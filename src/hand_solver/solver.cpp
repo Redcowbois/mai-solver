@@ -4,6 +4,7 @@
 #include <pybind11/stl.h>
 
 #include <algorithm>
+#include <cmath>
 #include <deque>
 #include <iostream>
 #include <limits>
@@ -223,7 +224,123 @@ SolverOutput solver(const SolverConfig& config, const std::vector<TimedNoteGroup
     solution.push_front(cur_pos);
   }
 
-  KinematicData data = KinematicData();
+  KinematicData data = compute_kinematics(solution, config);
 
   return SolverOutput{true, solution, data};
+}
+
+KinematicData compute_kinematics(const std::deque<HandPlacement>& solution, const SolverConfig& config) {
+  if (solution.empty()) {
+    return KinematicData{};
+  }
+
+  KinematicData data;
+  data.is_feasible = true;
+
+  double total_velocity = 0.0;
+  int velocity_samples = 0;
+  double peak_vel = 0.0;
+  double crossover_duration = 0.0;
+  int left_actions = 0;
+  int right_actions = 0;
+  int jack_count = 0;
+  int hold_overlap = 0;
+
+  for (size_t i = 0; i < solution.size(); ++i) {
+    const auto& cur = solution[i];
+
+    // hand actions
+    if (cur.left_action == HandAction::TAP || cur.left_action == HandAction::HOLD) {
+      left_actions++;
+    }
+    if (cur.right_action == HandAction::TAP || cur.right_action == HandAction::HOLD) {
+      right_actions++;
+    }
+
+    // simultaneous hold overlap
+    if (cur.left_action == HandAction::HOLD && cur.right_action == HandAction::HOLD) {
+      hold_overlap++;
+    }
+
+    // transition metrics to next placement
+    if (i + 1 < solution.size()) {
+      const auto& next = solution[i + 1];
+      double dt = next.time - cur.time;
+
+      if (dt > 0.0) {
+        // crossover duration
+        if (cur.left_hand_pos.first > cur.right_hand_pos.first) {
+          crossover_duration += dt;
+        }
+
+        // velocity
+        double l_dx = next.left_hand_pos.first - cur.left_hand_pos.first;
+        double l_dy = next.left_hand_pos.second - cur.left_hand_pos.second;
+        double l_dist = std::sqrt(l_dx * l_dx + l_dy * l_dy);
+        double l_vel = l_dist / dt;
+
+        double r_dx = next.right_hand_pos.first - cur.right_hand_pos.first;
+        double r_dy = next.right_hand_pos.second - cur.right_hand_pos.second;
+        double r_dist = std::sqrt(r_dx * r_dx + r_dy * r_dy);
+        double r_vel = r_dist / dt;
+
+        total_velocity += l_vel + r_vel;
+        velocity_samples += 2;
+        peak_vel = std::max(peak_vel, std::max(l_vel, r_vel));
+
+        // jack detection
+        if (dt <= config.jack_window) {
+          if (cur.left_action != HandAction::IDLE && next.left_action != HandAction::IDLE) {
+            if ((l_dx * l_dx + l_dy * l_dy) < 1e-4) {
+              jack_count++;
+            }
+          }
+          if (cur.right_action != HandAction::IDLE && next.right_action != HandAction::IDLE) {
+            if ((r_dx * r_dx + r_dy * r_dy) < 1e-4) {
+              jack_count++;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // mean and peak velocity
+  data.mean_velocity = velocity_samples > 0 ? (total_velocity / velocity_samples) : 0.0;
+  data.peak_velocity = peak_vel;
+
+  // crossover duration percentage
+  double total_duration = solution.back().time - solution.front().time;
+  data.crossover_duration_pct = (total_duration > 0.0) ? (crossover_duration / total_duration) * 100.0 : 0.0;
+
+  // hand balance
+  int total_actions = left_actions + right_actions;
+  data.hand_balance = total_actions > 0 ? (static_cast<double>(left_actions) / total_actions) : 0.5;
+
+  data.jack_count = jack_count;
+  data.hold_overlap_count = hold_overlap;
+
+  // peak rolling NPS (1000ms sliding window)
+  double peak_nps = 0.0;
+  size_t left_win = 0;
+  int current_window_notes = 0;
+  for (size_t right_win = 0; right_win < solution.size(); ++right_win) {
+    int notes_at_r = (solution[right_win].left_action != HandAction::IDLE ? 1 : 0) +
+                     (solution[right_win].right_action != HandAction::IDLE ? 1 : 0);
+    current_window_notes += notes_at_r;
+
+    while (solution[right_win].time - solution[left_win].time > 1000.0) {
+      int notes_at_l = (solution[left_win].left_action != HandAction::IDLE ? 1 : 0) +
+                       (solution[left_win].right_action != HandAction::IDLE ? 1 : 0);
+      current_window_notes -= notes_at_l;
+      left_win++;
+    }
+
+    double window_duration = std::max(1.0, (solution[right_win].time - solution[left_win].time) / 1000.0);
+    double cur_nps = current_window_notes / window_duration;
+    peak_nps = std::max(peak_nps, cur_nps);
+  }
+  data.peak_rolling_nps = peak_nps;
+
+  return data;
 }

@@ -7,7 +7,7 @@
 
 ---
 
-## Phase 2: C++17 Kinematics Solver Engine (In Progress)
+## Phase 2: C++17 Kinematics Solver Engine
 * **Configuration & Output Telemetry:** Define and bind `SolverConfig` (beam width, velocity limits, biomechanical penalty weights) and `KinematicFeatures` (mean/peak velocity, crossover duration percentage, hand balance, jack count, peak rolling NPS, and feasibility flag).
 * **Trellis State Representation:** Implement cache-friendly, Plain Old Data (POD) `TrellisNode` structs tracking left/right hand coordinates, active hold lockout timers (`lock_until`), last active hand, cumulative path cost, and `parent_idx` for backtracking.
 * **Biomechanical Cost Function:** Evaluate candidate hand transitions with hard constraints ($+\infty$ for hold lockout violations or exceeding $v_{\max}$) and soft biomechanical penalties (kinetic travel effort, arm crossovers where $x_L > x_R$, and rapid same-hand jacks).

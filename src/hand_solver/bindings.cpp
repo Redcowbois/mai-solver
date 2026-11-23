@@ -138,6 +138,9 @@ PYBIND11_MODULE(mai_solver, m) {
       "Expand a trellis node against a note group into valid candidate nodes in-place", py::arg("config"),
       py::arg("prev"), py::arg("prev_t"), py::arg("prev_idx"), py::arg("notes"), py::arg("nodes_next"));
 
+  m2.def("compute_kinematics", &compute_kinematics, "Compute kinematic metrics from hand placements",
+         py::arg("solution"), py::arg("config") = SolverConfig());
+
   m2.def("solver", &solver, "Solve optimal hand placements for a chart", py::arg("config"), py::arg("chart"));
 
   m2.def(

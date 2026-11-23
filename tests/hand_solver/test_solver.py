@@ -7,8 +7,10 @@ from mai_solver.chart_objects import (
 from mai_solver.hand_solver import (
     HandAction,
     HandPlacement,
+    KinematicData,
     SolverConfig,
     SolverOutput,
+    compute_kinematics,
     solve,
     solver,
 )
@@ -194,3 +196,58 @@ class TestSolverFeasibility:
         ]
         res = solve(chart, strict_config)
         assert res.is_feasible is False
+
+
+# ==============================================================================
+# 6. KinematicData Metric Computation
+# ==============================================================================
+
+class TestComputeKinematics:
+    def test_empty_solution_kinematics(self, default_config):
+        """Empty placements should yield default KinematicData with is_feasible=False."""
+        data = compute_kinematics([], default_config)
+        assert isinstance(data, KinematicData)
+        assert data.is_feasible is False
+        assert data.mean_velocity == 0.0
+        assert data.peak_velocity == 0.0
+
+    def test_hand_balance_calculation(self, default_config):
+        """One LH tap and one RH tap should result in a 0.5 (50%) hand balance."""
+        placements = [
+            HandPlacement(100.0, POS_BTN2, POS_BTN7, HandAction.IDLE, HandAction.TAP),
+            HandPlacement(200.0, POS_BTN2, POS_BTN7, HandAction.TAP, HandAction.IDLE),
+        ]
+        data = compute_kinematics(placements, default_config)
+        assert data.is_feasible is True
+        assert data.hand_balance == pytest.approx(0.5)
+
+    def test_crossover_duration_pct(self, default_config):
+        """When LH is to the right of RH for the entire transition, crossover pct is 100%."""
+        # Frame 1 at 100ms: LH at x=0.5, RH at x=-0.5 (crossover: x_L > x_R)
+        # Frame 2 at 200ms: end of chart
+        placements = [
+            HandPlacement(100.0, (-0.5, 0.0), (0.5, 0.0), HandAction.TAP, HandAction.TAP),
+            HandPlacement(200.0, (-0.5, 0.0), (0.5, 0.0), HandAction.TAP, HandAction.TAP),
+        ]
+        data = compute_kinematics(placements, default_config)
+        assert data.crossover_duration_pct == pytest.approx(100.0)
+
+    def test_jack_count_detection(self, default_config):
+        """Rapid same-hand tap on the same button within jack_window should increment jack_count."""
+        # RH taps at POS_BTN2 at 100ms and again at 180ms (dt = 80ms <= jack_window of 150ms)
+        placements = [
+            HandPlacement(100.0, POS_BTN2, POS_BTN7, HandAction.TAP, HandAction.IDLE),
+            HandPlacement(180.0, POS_BTN2, POS_BTN7, HandAction.TAP, HandAction.IDLE),
+        ]
+        data = compute_kinematics(placements, default_config)
+        assert data.jack_count == 1
+
+    def test_hold_overlap_detection(self, default_config):
+        """Frames where both hands sustain a HOLD simultaneously increment hold_overlap_count."""
+        placements = [
+            HandPlacement(100.0, POS_BTN2, POS_BTN7, HandAction.HOLD, HandAction.HOLD),
+            HandPlacement(200.0, POS_BTN2, POS_BTN7, HandAction.TAP, HandAction.IDLE),
+        ]
+        data = compute_kinematics(placements, default_config)
+        assert data.hold_overlap_count == 1
+
