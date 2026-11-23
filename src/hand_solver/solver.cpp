@@ -45,9 +45,9 @@ float transition_cost(const TrellisNode& prev, const TrellisNode& curr, float pr
     return std::numeric_limits<float>::infinity();
   }
 
-  // calculate movement effort
+  // calculate movement effort: normalized by physical speed ceiling (v / v_max)^2
   float total_move_sq = left_move_sq + right_move_sq;
-  float effort = total_move_sq / dt;
+  float effort = total_move_sq / max_dist_sq;
 
   return config.weight_velocity * effort;
 }
@@ -58,7 +58,8 @@ float crossover_penalty(const TrellisNode& curr, const SolverConfig& config) noe
     return 0;
   }
 
-  float x_diff = curr.left_hand_pos.first - curr.right_hand_pos.first;
+  // normalize crossover depth by cabinet diameter (2.0)
+  float x_diff = (curr.left_hand_pos.first - curr.right_hand_pos.first) / 2.0f;
 
   return config.weight_crossover * x_diff * x_diff;
 }
@@ -85,7 +86,8 @@ float jack_penalty(const TrellisNode& prev, const TrellisNode& curr, float prev_
     jack += 1;
   }
 
-  float intensity = (config.jack_window - dt) / config.jack_window;
+  // normalize delta t against rapid-stream threshold (jack_window)
+  float intensity = std::max(0.0f, 1.0f - dt / config.jack_window);
 
   return config.weight_jack * jack * intensity;
 }

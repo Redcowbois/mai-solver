@@ -32,12 +32,12 @@ class TestCrossoverPenalty:
         assert cost == 0.0
 
     def test_crossover_quadratic_scaling(self, default_config):
-        """When left hand is to the right of right hand, penalty is weight_crossover * (x_diff)^2."""
-        # x_left = 0.4, x_right = 0.1 -> x_diff = 0.3
+        """When left hand is to the right of right hand, penalty is weight_crossover * (x_diff / 2.0)^2."""
+        # x_left = 0.4, x_right = 0.1 -> x_diff = 0.3, normalized = 0.3 / 2.0
         node = TrellisNode(left_hand_pos=(0.4, 0.0), right_hand_pos=(0.1, 0.0))
         cost = crossover_penalty(node, default_config)
 
-        expected = default_config.weight_crossover * (0.3 ** 2)
+        expected = default_config.weight_crossover * ((0.3 / 2.0) ** 2)
         assert cost == pytest.approx(expected, rel=1e-5)
 
     def test_crossover_ignores_vertical_distance(self, default_config):
@@ -171,18 +171,20 @@ class TestTransitionCost:
         assert cost == 0.0
 
     def test_normal_movement_cost(self, default_config):
-        """Normal movement below v_max computes weight_velocity * (d_left^2 + d_right^2) / dt."""
+        """Normal movement below v_max computes weight_velocity * (d_left^2 + d_right^2) / max_dist_sq."""
         prev = TrellisNode(left_hand_pos=(-0.5, 0.0), right_hand_pos=(0.5, 0.0))
         curr = TrellisNode(left_hand_pos=(-0.4, 0.0), right_hand_pos=(0.5, 0.1))
 
         # dx_l = 0.1, dy_l = 0.0 -> dist_sq_l = 0.01
         # dx_r = 0.0, dy_r = 0.1 -> dist_sq_r = 0.01
-        # dt = 100.0 -> effort = (0.01 + 0.01) / 100.0 = 0.0002
+        # dt = 100.0, max_dist_sq = (v_max * dt)^2 = (0.035 * 100)^2 = 12.25
+        # effort = 0.02 / 12.25
         prev_t = 0.0
         curr_t = 100.0
         cost = transition_cost(prev, curr, prev_t, curr_t, default_config)
 
-        expected = default_config.weight_velocity * (0.02 / 100.0)
+        max_dist_sq = (default_config.v_max * 100.0) ** 2
+        expected = default_config.weight_velocity * (0.02 / max_dist_sq)
         assert cost == pytest.approx(expected, rel=1e-5)
 
     def test_velocity_limit_left_hand(self, default_config):
