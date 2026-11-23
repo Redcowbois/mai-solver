@@ -69,10 +69,9 @@ PYBIND11_MODULE(mai_solver, m) {
 
   py::class_<KinematicData>(m2, "KinematicData")
       .def(py::init<>(), "Default constructor for KinematicData")
-      .def(py::init<bool, double, double, double, double, int, int, double>(),
-           "Parameterized constructor for KinematicData", py::arg("is_feas"), py::arg("mean_vel"), py::arg("peak_vel"),
-           py::arg("crossover_dur"), py::arg("hand_bal"), py::arg("jack_c"), py::arg("h_over_c"),
-           py::arg("peak_roll_nps"))
+      .def(py::init<double, double, double, double, int, int, double>(), "Parameterized constructor for KinematicData",
+           py::arg("mean_vel"), py::arg("peak_vel"), py::arg("crossover_dur"), py::arg("hand_bal"), py::arg("jack_c"),
+           py::arg("h_over_c"), py::arg("peak_roll_nps"))
       .def_readwrite("is_feasible", &KinematicData::is_feasible)
       .def_readwrite("mean_velocity", &KinematicData::mean_velocity)
       .def_readwrite("peak_velocity", &KinematicData::peak_velocity)
@@ -84,8 +83,9 @@ PYBIND11_MODULE(mai_solver, m) {
 
   py::class_<SolverOutput>(m2, "SolverOutput")
       .def(py::init<>(), "Default constructor for SolverOutput")
-      .def(py::init<const std::vector<HandPlacement>&, const KinematicData&>(),
-           "Parameterized constructor for SolverOutput", py::arg("hand_p"), py::arg("kinematic_d"))
+      .def(py::init<bool, const std::deque<HandPlacement>&, const KinematicData&>(),
+           "Parameterized constructor for SolverOutput", py::arg("is_feas"), py::arg("hand_p"), py::arg("kinematic_d"))
+      .def_readwrite("is_feasible", &SolverOutput::is_feasible)
       .def_readwrite("hand_placements", &SolverOutput::hand_placements)
       .def_readwrite("kinematic_data", &SolverOutput::kinematic_data);
 
@@ -94,9 +94,8 @@ PYBIND11_MODULE(mai_solver, m) {
       .def(py::init<const std::pair<float, float>&, const std::pair<float, float>&, float, float, float, int16_t, bool,
                     bool>(),
            "Parameterized constructor for TrellisNode", py::arg("left_hand_pos"), py::arg("right_hand_pos"),
-           py::arg("total_score") = std::numeric_limits<float>::infinity(), py::arg("lock_until_left") = 0.0f,
-           py::arg("lock_until_right") = 0.0f, py::arg("prev_node") = -1, py::arg("left_used") = false,
-           py::arg("right_used") = false)
+           py::arg("total_score") = 0.0f, py::arg("lock_until_left") = 0.0f, py::arg("lock_until_right") = 0.0f,
+           py::arg("prev_node") = -1, py::arg("left_used") = false, py::arg("right_used") = false)
       .def_readwrite("left_hand_pos", &TrellisNode::left_hand_pos)
       .def_readwrite("right_hand_pos", &TrellisNode::right_hand_pos)
       .def_readwrite("total_score", &TrellisNode::total_score)
@@ -138,4 +137,16 @@ PYBIND11_MODULE(mai_solver, m) {
       },
       "Expand a trellis node against a note group into valid candidate nodes in-place", py::arg("config"),
       py::arg("prev"), py::arg("prev_t"), py::arg("prev_idx"), py::arg("notes"), py::arg("nodes_next"));
+
+  m2.def("solver", &solver, "Solve optimal hand placements for a chart", py::arg("config"), py::arg("chart"));
+
+  m2.def(
+      "solve",
+      [](const std::vector<TimedNoteGroup>& chart, const SolverConfig& config) { return solver(config, chart); },
+      "Solve optimal hand placements for a chart", py::arg("chart"), py::arg("config") = SolverConfig());
+
+  m2.def(
+      "solve",
+      [](const SolverConfig& config, const std::vector<TimedNoteGroup>& chart) { return solver(config, chart); },
+      "Solve optimal hand placements for a chart", py::arg("config"), py::arg("chart"));
 }
