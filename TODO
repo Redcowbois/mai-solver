@@ -1,0 +1,22 @@
+# Remaining Tasks to Complete Solver
+- [ ] Initialize the root beam at t=0 with starting hand positions from config and total_score=0.
+- [ ] Loop over each TimedNoteGroup in the chart and expand all current beam nodes into next_beam.
+- [ ] Prune next_beam to keep only the top config.beam_width nodes with the lowest total_score.
+- [ ] Store layer history (all surviving beams) in a history buffer so prev_node links remain valid.
+- [ ] Backtrack from the lowest-scoring terminal node at the final step to reconstruct the optimal sequence of HandPlacements.
+- [ ] Compute KinematicData metrics (velocities, crossover duration %, hand balance, jack count, peak NPS).
+- [ ] Package hand placements and kinematic data into SolverOutput and return it from solve().
+- [ ] Expose solve() in bindings.cpp with pybind11 and write end-to-end integration tests in tests/hand_solver.
+
+
+
+# Study
+
+TODO: In C++, a non-const lvalue reference (T&) cannot bind to temporary objects or rvalues. UNDERSTAND THIS
+
+
+# Later
+
+TODO: Optimize default values for solver CONFIG
+- [ ] Add slide note path tracking and touch zone geometry (A/B/C/D/E) for DX charts.
+- [ ] Implement an automated difficulty / stamina estimator using the solver's KinematicData metrics.
