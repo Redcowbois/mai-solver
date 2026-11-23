@@ -449,5 +449,30 @@ class TestCanonicalPatterns:
         for p in res.hand_placements[1:]:
             assert p.right_action == HandAction.TAP
 
+    def test_fast_same_note_stream_forces_hand_alternation(self, default_config):
+        """A fast stream on the exact same button (e.g. button 1 every 80ms) forces hands to alternate to avoid jack penalty."""
+        # 4 consecutive taps on Button 1 spaced 80ms apart (well within jack_window of 150ms)
+        chart = [
+            TimedNoteGroup(100.0, [make_tap(100.0, 1, POS_BTN1)]),
+            TimedNoteGroup(180.0, [make_tap(180.0, 1, POS_BTN1)]),
+            TimedNoteGroup(260.0, [make_tap(260.0, 1, POS_BTN1)]),
+            TimedNoteGroup(340.0, [make_tap(340.0, 1, POS_BTN1)]),
+        ]
+        res = solve(chart, default_config)
+        assert res.is_feasible is True
+        assert len(res.hand_placements) == 4
+
+        # Verify strict hand alternation on the repeated note
+        for i in range(len(res.hand_placements) - 1):
+            p1 = res.hand_placements[i]
+            p2 = res.hand_placements[i + 1]
+            # Exactly one hand plays each note
+            assert (p1.left_action == HandAction.TAP) ^ (p1.right_action == HandAction.TAP)
+            assert (p2.left_action == HandAction.TAP) ^ (p2.right_action == HandAction.TAP)
+            # Active hand alternates
+            assert p1.left_action != p2.left_action
+            assert p1.right_action != p2.right_action
+
+
 
 
