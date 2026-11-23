@@ -365,3 +365,89 @@ class TestComplexPatterns:
         assert res.kinematic_data.peak_rolling_nps > 0.0
 
 
+# ==============================================================================
+# 8. Canonical Patterns (from Phase 3 Roadmap)
+# ==============================================================================
+
+class TestCanonicalPatterns:
+    def test_16th_note_trill(self, default_config):
+        """16th-note trill alternating between button 7 and button 2 at high tempo."""
+        chart = [
+            TimedNoteGroup(100.0 + i * 125.0, [
+                make_tap(100.0 + i * 125.0, 7 if i % 2 == 0 else 2, POS_BTN7 if i % 2 == 0 else POS_BTN2)
+            ])
+            for i in range(8)
+        ]
+        res = solve(chart, default_config)
+        assert res.is_feasible is True
+        assert len(res.hand_placements) == 8
+        for i, p in enumerate(res.hand_placements):
+            if i % 2 == 0:
+                assert p.left_action == HandAction.TAP
+                assert p.right_action == HandAction.IDLE
+            else:
+                assert p.left_action == HandAction.IDLE
+                assert p.right_action == HandAction.TAP
+
+    def test_slow_single_side_repeats(self, default_config):
+        """Slow repeats on the same button with comfortable gaps stay on one hand."""
+        chart = [
+            TimedNoteGroup(float(200 + i * 500), [make_tap(float(200 + i * 500), 7, POS_BTN7)])
+            for i in range(5)
+        ]
+        res = solve(chart, default_config)
+        assert res.is_feasible is True
+        assert len(res.hand_placements) == 5
+        for p in res.hand_placements:
+            assert p.left_action == HandAction.TAP
+            assert p.right_action == HandAction.IDLE
+
+    def test_clockwise_rotational_spin(self, default_config):
+        """Clockwise rotational spin: full circular sweep across buttons 1 -> 2 -> ... -> 8."""
+        buttons = [
+            (1, POS_BTN1), (2, POS_BTN2), (3, POS_BTN3), (4, POS_BTN4),
+            (5, POS_BTN5), (6, POS_BTN6), (7, POS_BTN7), (8, POS_BTN8),
+        ]
+        chart = [
+            TimedNoteGroup(float(100 + i * 175), [make_tap(float(100 + i * 175), btn, pos)])
+            for i, (btn, pos) in enumerate(buttons)
+        ]
+        res = solve(chart, default_config)
+        assert res.is_feasible is True
+        assert len(res.hand_placements) == 8
+        # Each step exactly one hand hits the note
+        for p in res.hand_placements:
+            assert (p.left_action == HandAction.TAP) ^ (p.right_action == HandAction.TAP)
+
+    def test_wide_jumps(self, default_config):
+        """Wide jumps across the cabinet (buttons 7 -> 3 -> 8 -> 4)."""
+        chart = [
+            TimedNoteGroup(100.0, [make_tap(100.0, 7, POS_BTN7)]),
+            TimedNoteGroup(400.0, [make_tap(400.0, 3, POS_BTN3)]),
+            TimedNoteGroup(700.0, [make_tap(700.0, 8, POS_BTN8)]),
+            TimedNoteGroup(1000.0, [make_tap(1000.0, 4, POS_BTN4)]),
+        ]
+        res = solve(chart, default_config)
+        assert res.is_feasible is True
+        assert len(res.hand_placements) == 4
+
+    def test_hold_plus_stream_lockouts(self, default_config):
+        """Hold-plus-stream lockout: LH locked holding button 7 while RH streams buttons 1..3."""
+        chart = [
+            TimedNoteGroup(100.0, [make_hold(100.0, 7, POS_BTN7, duration_ms=900.0)]),
+            TimedNoteGroup(250.0, [make_tap(250.0, 1, POS_BTN1)]),
+            TimedNoteGroup(400.0, [make_tap(400.0, 2, POS_BTN2)]),
+            TimedNoteGroup(550.0, [make_tap(550.0, 3, POS_BTN3)]),
+            TimedNoteGroup(700.0, [make_tap(700.0, 2, POS_BTN2)]),
+            TimedNoteGroup(850.0, [make_tap(850.0, 1, POS_BTN1)]),
+        ]
+        res = solve(chart, default_config)
+        assert res.is_feasible is True
+        assert len(res.hand_placements) == 6
+        for p in res.hand_placements:
+            assert p.left_action == HandAction.HOLD
+        for p in res.hand_placements[1:]:
+            assert p.right_action == HandAction.TAP
+
+
+
