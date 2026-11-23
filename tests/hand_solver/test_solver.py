@@ -17,9 +17,13 @@ from mai_solver.hand_solver import (
 
 # Standard maimai button positions on the unit circle (R = 1.0)
 # Button 2 (right): (0.9239, 0.3827), Button 7 (left): (-0.9239, 0.3827)
-POS_BTN2 = (0.9239, 0.3827)
-POS_BTN7 = (-0.9239, 0.3827)
 POS_BTN1 = (0.3827, 0.9239)
+POS_BTN2 = (0.9239, 0.3827)
+POS_BTN3 = (0.9239, -0.3827)
+POS_BTN4 = (0.3827, -0.9239)
+POS_BTN5 = (-0.3827, -0.9239)
+POS_BTN6 = (-0.9239, -0.3827)
+POS_BTN7 = (-0.9239, 0.3827)
 POS_BTN8 = (-0.3827, 0.9239)
 
 
@@ -250,4 +254,114 @@ class TestComputeKinematics:
         ]
         data = compute_kinematics(placements, default_config)
         assert data.hold_overlap_count == 1
+
+
+# ==============================================================================
+# 7. Complex Patterns: Trills, Streams, and Rotations
+# ==============================================================================
+
+class TestComplexPatterns:
+    def test_rapid_trill_alternates_hands(self, default_config):
+        """A rapid 16th-note trill alternating between button 7 (LH) and button 2 (RH)."""
+        # 125ms intervals (120 BPM 16th notes)
+        chart = [
+            TimedNoteGroup(100.0, [make_tap(100.0, 7, POS_BTN7)]),
+            TimedNoteGroup(225.0, [make_tap(225.0, 2, POS_BTN2)]),
+            TimedNoteGroup(350.0, [make_tap(350.0, 7, POS_BTN7)]),
+            TimedNoteGroup(475.0, [make_tap(475.0, 2, POS_BTN2)]),
+        ]
+        res = solve(chart, default_config)
+        assert res.is_feasible is True
+        assert len(res.hand_placements) == 4
+
+        # Check alternating actions
+        expected_left = [HandAction.TAP, HandAction.IDLE, HandAction.TAP, HandAction.IDLE]
+        expected_right = [HandAction.IDLE, HandAction.TAP, HandAction.IDLE, HandAction.TAP]
+        actual_left = [p.left_action for p in res.hand_placements]
+        actual_right = [p.right_action for p in res.hand_placements]
+
+        assert actual_left == expected_left
+        assert actual_right == expected_right
+
+    def test_slow_single_side_stream_avoids_crossover(self, default_config):
+        """Notes purely on the left side (button 7) spaced comfortably should stay on LH."""
+        chart = [
+            TimedNoteGroup(200.0, [make_tap(200.0, 7, POS_BTN7)]),
+            TimedNoteGroup(600.0, [make_tap(600.0, 7, POS_BTN7)]),
+            TimedNoteGroup(1000.0, [make_tap(1000.0, 7, POS_BTN7)]),
+        ]
+        res = solve(chart, default_config)
+        assert res.is_feasible is True
+        for p in res.hand_placements:
+            assert p.left_action == HandAction.TAP
+            assert p.right_action == HandAction.IDLE
+            assert p.left_hand_pos[0] <= p.right_hand_pos[0]
+
+    def test_hold_with_concurrent_stream(self, default_config):
+        """LH sustains a hold on button 7 while RH streams buttons 1, 2, 3."""
+        chart = [
+            TimedNoteGroup(100.0, [make_hold(100.0, 7, POS_BTN7, duration_ms=700.0)]),
+            TimedNoteGroup(250.0, [make_tap(250.0, 1, POS_BTN1)]),
+            TimedNoteGroup(450.0, [make_tap(450.0, 2, POS_BTN2)]),
+            TimedNoteGroup(650.0, [make_tap(650.0, 3, POS_BTN3)]),
+        ]
+        res = solve(chart, default_config)
+        assert res.is_feasible is True
+        assert len(res.hand_placements) == 4
+
+        # LH must maintain HOLD across all frames
+        for p in res.hand_placements:
+            assert p.left_action == HandAction.HOLD
+
+        # RH must execute TAP on the stream notes
+        assert res.hand_placements[0].right_action == HandAction.IDLE
+        for p in res.hand_placements[1:]:
+            assert p.right_action == HandAction.TAP
+
+    def test_overlapping_dual_holds(self, default_config):
+        """LH holds button 7 (100-500ms), and RH starts a hold on button 2 at 300ms (300-700ms)."""
+        chart = [
+            TimedNoteGroup(100.0, [make_hold(100.0, 7, POS_BTN7, duration_ms=400.0)]),
+            TimedNoteGroup(300.0, [make_hold(300.0, 2, POS_BTN2, duration_ms=400.0)]),
+        ]
+        res = solve(chart, default_config)
+        assert res.is_feasible is True
+        assert len(res.hand_placements) == 2
+
+        # At 300ms, both LH and RH must be holding
+        p2 = res.hand_placements[1]
+        assert p2.left_action == HandAction.HOLD
+        assert p2.right_action == HandAction.HOLD
+        assert res.kinematic_data.hold_overlap_count == 1
+
+    def test_chord_stream(self, default_config):
+        """A series of simultaneous chords across the sides."""
+        chart = [
+            TimedNoteGroup(100.0, [make_tap(100.0, 7, POS_BTN7), make_tap(100.0, 2, POS_BTN2)]),
+            TimedNoteGroup(300.0, [make_tap(300.0, 8, POS_BTN8), make_tap(300.0, 1, POS_BTN1)]),
+            TimedNoteGroup(500.0, [make_tap(500.0, 6, POS_BTN6), make_tap(500.0, 3, POS_BTN3)]),
+        ]
+        res = solve(chart, default_config)
+        assert res.is_feasible is True
+        assert len(res.hand_placements) == 3
+
+        for p in res.hand_placements:
+            assert p.left_action == HandAction.TAP
+            assert p.right_action == HandAction.TAP
+            assert p.left_hand_pos[0] <= p.right_hand_pos[0]  # No crossover
+
+    def test_solver_output_kinematic_data_populated(self, default_config):
+        """Verify that solve() populates KinematicData inside SolverOutput."""
+        chart = [
+            TimedNoteGroup(100.0, [make_tap(100.0, 8, POS_BTN8)]),
+            TimedNoteGroup(300.0, [make_tap(300.0, 3, POS_BTN3)]),
+            TimedNoteGroup(500.0, [make_tap(500.0, 8, POS_BTN8)]),
+        ]
+        res = solve(chart, default_config)
+        assert res.is_feasible is True
+        assert res.kinematic_data.is_feasible is True
+        assert res.kinematic_data.mean_velocity > 0.0
+        assert res.kinematic_data.peak_velocity > 0.0
+        assert res.kinematic_data.peak_rolling_nps > 0.0
+
 
