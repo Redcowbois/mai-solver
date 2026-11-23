@@ -135,6 +135,13 @@ void expand_trellis(const SolverConfig& config, const TrellisNode& prev, float p
     const NoteEvent& note2 = note_group.notes[1];
     float lock2 = note2.note_type == NoteType::HOLD ? note2.time_ms + note2.hold_duration_ms : 0.0f;
 
+    auto add_if_valid = [&nodes_next](float cost, TrellisNode& new_node) {
+      if (cost < std::numeric_limits<float>::infinity()) {
+        new_node.total_score += cost;
+        nodes_next.push_back(new_node);
+      }
+    };
+
     // if left and right aren't locked
     if (prev.lock_until_right - EPSILON <= note1.time_ms && prev.lock_until_left - EPSILON <= note1.time_ms) {
       TrellisNode left_note1_node = TrellisNode(std::pair{note1.circle_coord[0].first, note1.circle_coord[0].second},
@@ -142,19 +149,13 @@ void expand_trellis(const SolverConfig& config, const TrellisNode& prev, float p
                                                 prev.total_score, lock1, lock2, prev_idx, true, true);
 
       float cost = compute_total_cost(prev, left_note1_node, prev_t, note1.time_ms, config);
-      if (cost < std::numeric_limits<float>::infinity()) {
-        left_note1_node.total_score += cost;
-        nodes_next.push_back(left_note1_node);
-      }
+      add_if_valid(cost, left_note1_node);
 
       TrellisNode right_note1_node = TrellisNode(std::pair{note2.circle_coord[0].first, note2.circle_coord[0].second},
                                                  std::pair{note1.circle_coord[0].first, note1.circle_coord[0].second},
                                                  prev.total_score, lock2, lock1, prev_idx, true, true);
       float cost1 = compute_total_cost(prev, right_note1_node, prev_t, note1.time_ms, config);
-      if (cost1 < std::numeric_limits<float>::infinity()) {
-        right_note1_node.total_score += cost1;
-        nodes_next.push_back(right_note1_node);
-      }
+      add_if_valid(cost1, right_note1_node);
     }
 
   } else {
