@@ -1,9 +1,8 @@
 from pathlib import Path
-from tokens import NoteEvent, NoteType, TimedNoteGroup
 from geometry_transformation import PRECOMPUTED_PERIMETER_CANDIDATES
+from mai_solver.chart_objects import NoteEvent, NoteType, TimedNoteGroup
 import re
 from math import pi, sin, cos
-
 
 def parse_maidata_file(file_path: str | Path) -> dict:
     """Parse a maidata.txt file into metadata, levels, and raw chart strings."""
@@ -204,8 +203,8 @@ def write_processed_chart(chart: list[TimedNoteGroup], file_name: str) -> None:
     with open(output_path, "w", encoding="utf-8") as f:
         for group in chart:
             f.write(str(group) + "\n")
-    
 
+    
 
 # main 
 if __name__ == "__main__":

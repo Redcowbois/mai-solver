@@ -1,3 +1,0 @@
-pytest
-commitizen
-pybind11
