@@ -117,6 +117,9 @@ float crossover_penalty(const TrellisNode& curr, const SolverConfig& config) noe
 float jack_penalty(const TrellisNode& prev, const TrellisNode& curr, float prev_t, float curr_t,
                    const SolverConfig& config) noexcept;
 
+float compute_total_cost(const TrellisNode& prev, const TrellisNode& curr, float prev_t, float curr_t,
+                         const SolverConfig& config) noexcept;
+
 void expand_trellis(const SolverConfig& config, const TrellisNode& prev, float prev_t, int16_t prev_idx,
                     const TimedNoteGroup& notes, std::vector<TrellisNode>& nodes_next);
 

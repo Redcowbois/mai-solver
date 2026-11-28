@@ -114,6 +114,9 @@ PYBIND11_MODULE(mai_solver, m) {
   m2.def("jack_penalty", &jack_penalty, "Calculate jack penalty between consecutive trellis nodes", py::arg("prev"),
          py::arg("curr"), py::arg("prev_t"), py::arg("curr_t"), py::arg("config"));
 
+  m2.def("compute_total_cost", &compute_total_cost, "Calculate total transition cost between trellis nodes",
+         py::arg("prev"), py::arg("curr"), py::arg("prev_t"), py::arg("curr_t"), py::arg("config"));
+
   m2.def(
       "expand_trellis",
       [](const SolverConfig& config, const TrellisNode& prev, float prev_t, int16_t prev_idx,

@@ -14,6 +14,7 @@
 
 const float EPSILON = 0.5;
 
+// Computes kinematic movement cost between two trellis states, enforcing speed ceiling (v_max) and hold lockout constraints.
 float transition_cost(const TrellisNode& prev, const TrellisNode& curr, float prev_t, float curr_t,
                       const SolverConfig& config) noexcept {
   float dt = curr_t - prev_t;
@@ -52,6 +53,7 @@ float transition_cost(const TrellisNode& prev, const TrellisNode& curr, float pr
   return config.weight_velocity * effort;
 }
 
+// Penalizes biomechanically awkward arm crossover states where the left hand crosses to the right of the right hand (x_L > x_R).
 float crossover_penalty(const TrellisNode& curr, const SolverConfig& config) noexcept {
   // no penalty if left hand is left of right hand
   if (curr.left_hand_pos.first <= curr.right_hand_pos.first) {
@@ -64,6 +66,7 @@ float crossover_penalty(const TrellisNode& curr, const SolverConfig& config) noe
   return config.weight_crossover * x_diff * x_diff;
 }
 
+// Penalizes rapid consecutive strikes on the same button with the same hand within the jack time window.
 float jack_penalty(const TrellisNode& prev, const TrellisNode& curr, float prev_t, float curr_t,
                    const SolverConfig& config) noexcept {
   float dt = curr_t - prev_t;
@@ -92,6 +95,7 @@ float jack_penalty(const TrellisNode& prev, const TrellisNode& curr, float prev_
   return config.weight_jack * jack * intensity;
 }
 
+// Aggregates movement transition cost, crossover penalty, and jack penalty into a total edge transition cost.
 float compute_total_cost(const TrellisNode& prev, const TrellisNode& curr, float prev_t, float curr_t,
                          const SolverConfig& config) noexcept {
   float transition_c = transition_cost(prev, curr, prev_t, curr_t, config);
@@ -101,6 +105,7 @@ float compute_total_cost(const TrellisNode& prev, const TrellisNode& curr, float
   return transition_c + crossover_c + jack_c;
 }
 
+// Generates valid candidate TrellisNode states for the next chart event by branching notes across available hands.
 void expand_trellis(const SolverConfig& config, const TrellisNode& prev, float prev_t, int16_t prev_idx,
                     const TimedNoteGroup& note_group, std::vector<TrellisNode>& nodes_next) {
   // assume that there are at most 2 objects in TimeNoteGroup
@@ -164,6 +169,7 @@ void expand_trellis(const SolverConfig& config, const TrellisNode& prev, float p
   }
 }
 
+// Solves optimal hand placements for a chart using a beam-pruned Viterbi search and backwards-pass path reconstruction.
 SolverOutput solver(const SolverConfig& config, const std::vector<TimedNoteGroup>& chart) {
   if (chart.empty()) {
     return SolverOutput{};  // return empty output
@@ -231,6 +237,7 @@ SolverOutput solver(const SolverConfig& config, const std::vector<TimedNoteGroup
   return SolverOutput{true, solution, data};
 }
 
+// Performs a linear pass over the solved hand placement trajectory to compute summary physical and ergonomic telemetry.
 KinematicData compute_kinematics(const std::deque<HandPlacement>& solution, const SolverConfig& config) {
   if (solution.empty()) {
     return KinematicData{};
